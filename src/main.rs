@@ -9,6 +9,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "Platformer Jump Checker".to_string(),
                 present_mode: PresentMode::AutoVsync,
+                focused: true,
                 ..default()
             }),
             ..default()
