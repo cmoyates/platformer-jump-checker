@@ -15,7 +15,7 @@ impl Plugin for PathfindingPlugin {
         app.insert_resource(Pathfinding {
             nodes: Vec::new(),
             goal_graph_node: None,
-            goal_position: Vec2::ZERO,
+            start_graph_node: None,
             active: false,
         });
     }
@@ -72,7 +72,7 @@ pub struct PathfindingGraphNode {
 pub struct Pathfinding {
     pub nodes: Vec<PathfindingGraphNode>,
     pub goal_graph_node: Option<PathfindingGraphNode>,
-    pub goal_position: Vec2,
+    pub start_graph_node: Option<PathfindingGraphNode>,
     pub active: bool,
 }
 

@@ -4,6 +4,7 @@ mod utils;
 
 use bevy::prelude::*;
 
+use bevy::window::PrimaryWindow;
 use bevy::{app::AppExit, window::PresentMode};
 use level::{generate_level_polygons, Level};
 use pathfinding::{init_pathfinding_graph, Pathfinding, PathfindingPlugin};
@@ -54,7 +55,8 @@ pub fn s_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut exit: EventWriter<AppExit>,
     mouse_input: Res<ButtonInput<MouseButton>>,
-    mut clear_color: ResMut<ClearColor>,
+    q_windows: Query<&Window, With<PrimaryWindow>>,
+    mut pathfinding: ResMut<Pathfinding>,
 ) {
     // Escape to exit (if not WASM)
     #[cfg(not(target_arch = "wasm32"))]
@@ -62,9 +64,39 @@ pub fn s_input(
         exit.send(AppExit);
     }
 
+    // Select start node with left click
     if mouse_input.just_pressed(MouseButton::Left) {
-        println!("Left mouse button pressed");
-        clear_color.0 = Color::rgb(0.0, 0.0, 1.0);
+        let window_size = q_windows.single().resolution.clone();
+        if let Some(position) = q_windows.single().cursor_position() {
+            let mut mouse_pos_world =
+                position - Vec2::new(window_size.width() / 2.0, window_size.height() / 2.0);
+            mouse_pos_world.y *= -1.0;
+
+            for node_index in 0..pathfinding.nodes.len() {
+                let node = &pathfinding.nodes[node_index];
+
+                if (mouse_pos_world - node.position).length_squared() < (3.5_f32).powi(2) {
+                    pathfinding.start_graph_node = Some(node.clone());
+                }
+            }
+        }
+    }
+    // Select goal node with right click
+    if mouse_input.just_pressed(MouseButton::Right) {
+        let window_size = q_windows.single().resolution.clone();
+        if let Some(position) = q_windows.single().cursor_position() {
+            let mut mouse_pos_world =
+                position - Vec2::new(window_size.width() / 2.0, window_size.height() / 2.0);
+            mouse_pos_world.y *= -1.0;
+
+            for node_index in 0..pathfinding.nodes.len() {
+                let node = &pathfinding.nodes[node_index];
+
+                if (mouse_pos_world - node.position).length_squared() < (5.0_f32).powi(2) {
+                    pathfinding.goal_graph_node = Some(node.clone());
+                }
+            }
+        }
     }
 }
 
@@ -80,5 +112,13 @@ pub fn s_render(mut gizmos: Gizmos, level: Res<Level>, pathfinding: Res<Pathfind
     // Draw the pathfinding nodes
     for node in &pathfinding.nodes {
         gizmos.circle_2d(node.position, 2.5, Color::WHITE);
+    }
+
+    // Draw a larger circle for the start and end nodes
+    if let Some(start_graph_node) = &pathfinding.start_graph_node {
+        gizmos.circle_2d(start_graph_node.position, 7.5, Color::GREEN);
+    }
+    if let Some(goal_graph_node) = &pathfinding.goal_graph_node {
+        gizmos.circle_2d(goal_graph_node.position, 7.5, Color::RED);
     }
 }
