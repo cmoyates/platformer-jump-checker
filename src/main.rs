@@ -1,3 +1,4 @@
+mod jump_check;
 mod level;
 mod pathfinding;
 mod utils;
@@ -6,6 +7,7 @@ use bevy::prelude::*;
 
 use bevy::window::PrimaryWindow;
 use bevy::{app::AppExit, window::PresentMode};
+use jump_check::JumpCheckPlugin;
 use level::{generate_level_polygons, Level};
 use pathfinding::{init_pathfinding_graph, Pathfinding, PathfindingPlugin};
 
@@ -24,6 +26,7 @@ fn main() {
             ..default()
         }))
         .add_plugins(PathfindingPlugin)
+        .add_plugins(JumpCheckPlugin)
         // Startup systems
         .add_systems(Startup, s_init)
         // Update systems
@@ -92,7 +95,7 @@ pub fn s_input(
             for node_index in 0..pathfinding.nodes.len() {
                 let node = &pathfinding.nodes[node_index];
 
-                if (mouse_pos_world - node.position).length_squared() < (5.0_f32).powi(2) {
+                if (mouse_pos_world - node.position).length_squared() < (7.5_f32).powi(2) {
                     pathfinding.goal_graph_node = Some(node.clone());
                 }
             }
@@ -119,6 +122,6 @@ pub fn s_render(mut gizmos: Gizmos, level: Res<Level>, pathfinding: Res<Pathfind
         gizmos.circle_2d(start_graph_node.position, 7.5, Color::GREEN);
     }
     if let Some(goal_graph_node) = &pathfinding.goal_graph_node {
-        gizmos.circle_2d(goal_graph_node.position, 7.5, Color::RED);
+        gizmos.circle_2d(goal_graph_node.position, 7.5, Color::YELLOW);
     }
 }
