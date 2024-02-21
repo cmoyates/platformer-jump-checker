@@ -31,6 +31,8 @@ pub fn s_jump_check(level: Res<Level>, pathfinding: Res<Pathfinding>, mut gizmos
     let start_node = &pathfinding.start_graph_node.clone().unwrap();
     let goal_node = &pathfinding.goal_graph_node.clone().unwrap();
 
+    let radius = 10.0;
+
     let delta_p = goal_node.position - start_node.position;
     let acceleration = Vec2::new(0.0, -GRAVITY_STRENGTH);
     let v_max = JUMP_V_MAX;
@@ -68,20 +70,83 @@ pub fn s_jump_check(level: Res<Level>, pathfinding: Res<Pathfinding>, mut gizmos
                     let pos =
                         start_node.position + launch_velocity * t + acceleration * t * t / 2.0;
 
-                    let intersection = line_intersect(prev_pos, pos, line_start, line_end);
+                    let line_dir = (pos - prev_pos).normalize();
 
-                    if let Some(intersection) = intersection {
+                    let line_normal = Vec2::new(-line_dir.y, line_dir.x);
+
+                    let line_beginning_offset_1 = prev_pos + line_normal * radius;
+                    let line_beginning_offset_2 = prev_pos - line_normal * radius;
+                    let line_end_offset_1 = pos + line_normal * radius;
+                    let line_end_offset_2 = pos - line_normal * radius;
+
+                    gizmos.line_2d(line_beginning_offset_1, line_end_offset_1, Color::GREEN);
+                    gizmos.line_2d(line_beginning_offset_2, line_end_offset_2, Color::GREEN);
+
+                    let offset_1_intersection = line_intersect(
+                        line_beginning_offset_1,
+                        line_end_offset_1,
+                        line_start,
+                        line_end,
+                    );
+
+                    if let Some(intersection) = offset_1_intersection {
                         gizmos.circle_2d(intersection, 5.0, Color::RED);
 
                         jump_possible = false;
                         break 'polygon;
                     }
+
+                    let offset_2_intersection = line_intersect(
+                        line_beginning_offset_2,
+                        line_end_offset_2,
+                        line_start,
+                        line_end,
+                    );
+
+                    if let Some(intersection) = offset_2_intersection {
+                        gizmos.circle_2d(intersection, 5.0, Color::RED);
+
+                        jump_possible = false;
+                        break 'polygon;
+                    }
+
                     prev_pos = pos;
                 }
-                let intersection =
-                    line_intersect(prev_pos, goal_node.position, line_start, line_end);
 
-                if let Some(intersection) = intersection {
+                let line_dir = (goal_node.position - prev_pos).normalize();
+
+                let line_normal = Vec2::new(-line_dir.y, line_dir.x);
+
+                let line_beginning_offset_1 = prev_pos + line_normal * radius;
+                let line_beginning_offset_2 = prev_pos - line_normal * radius;
+                let line_end_offset_1 = goal_node.position + line_normal * radius;
+                let line_end_offset_2 = goal_node.position - line_normal * radius;
+
+                gizmos.line_2d(line_beginning_offset_1, line_end_offset_1, Color::GREEN);
+                gizmos.line_2d(line_beginning_offset_2, line_end_offset_2, Color::GREEN);
+
+                let offset_1_intersection = line_intersect(
+                    line_beginning_offset_1,
+                    line_end_offset_1,
+                    line_start,
+                    line_end,
+                );
+
+                if let Some(intersection) = offset_1_intersection {
+                    gizmos.circle_2d(intersection, 5.0, Color::RED);
+
+                    jump_possible = false;
+                    break 'polygon;
+                }
+
+                let offset_2_intersection = line_intersect(
+                    line_beginning_offset_2,
+                    line_end_offset_2,
+                    line_start,
+                    line_end,
+                );
+
+                if let Some(intersection) = offset_2_intersection {
                     gizmos.circle_2d(intersection, 5.0, Color::RED);
 
                     jump_possible = false;
@@ -91,21 +156,21 @@ pub fn s_jump_check(level: Res<Level>, pathfinding: Res<Pathfinding>, mut gizmos
         }
     }
 
-    draw_jump_arc(
-        start_node.clone(),
-        goal_node.clone(),
-        launch_velocity,
-        acceleration,
-        timestep,
-        &mut gizmos,
-        if jump_possible {
-            Color::GREEN
-        } else {
-            Color::RED
-        }
-        .with_a(0.2),
-        10.0,
-    );
+    // draw_jump_arc(
+    //     start_node.clone(),
+    //     goal_node.clone(),
+    //     launch_velocity,
+    //     acceleration,
+    //     timestep,
+    //     &mut gizmos,
+    //     if jump_possible {
+    //         Color::GREEN
+    //     } else {
+    //         Color::RED
+    //     }
+    //     .with_a(0.2),
+    //     10.0,
+    // );
 }
 
 pub fn draw_jump_arc(
