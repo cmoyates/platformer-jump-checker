@@ -108,7 +108,7 @@ pub fn s_render(mut gizmos: Gizmos, level: Res<Level>, pathfinding: Res<Pathfind
     for polygon in &level.polygons {
         gizmos.linestrip_2d(
             polygon.points.iter().cloned().collect::<Vec<Vec2>>(),
-            polygon.color,
+            polygon.color.with_a(0.1),
         );
     }
 
@@ -119,9 +119,9 @@ pub fn s_render(mut gizmos: Gizmos, level: Res<Level>, pathfinding: Res<Pathfind
 
     // Draw a larger circle for the start and end nodes
     if let Some(start_graph_node) = &pathfinding.start_graph_node {
-        gizmos.circle_2d(start_graph_node.position, 7.5, Color::GREEN);
+        gizmos.circle_2d(start_graph_node.position, 2.5, Color::GREEN);
     }
     if let Some(goal_graph_node) = &pathfinding.goal_graph_node {
-        gizmos.circle_2d(goal_graph_node.position, 7.5, Color::YELLOW);
+        gizmos.circle_2d(goal_graph_node.position, 2.5, Color::YELLOW);
     }
 }

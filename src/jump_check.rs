@@ -6,7 +6,12 @@ use bevy::{
     render::color::Color,
 };
 
-use crate::{level::Level, pathfinding::Pathfinding, utils::line_intersect, GRAVITY_STRENGTH};
+use crate::{
+    level::Level,
+    pathfinding::{Pathfinding, PathfindingGraphNode},
+    utils::line_intersect,
+    GRAVITY_STRENGTH,
+};
 
 pub const JUMP_V_MAX: f32 = 8.0;
 
@@ -87,8 +92,8 @@ pub fn s_jump_check(level: Res<Level>, pathfinding: Res<Pathfinding>, mut gizmos
     }
 
     draw_jump_arc(
-        start_node.position,
-        goal_node.position,
+        start_node.clone(),
+        goal_node.clone(),
         launch_velocity,
         acceleration,
         timestep,
@@ -97,26 +102,89 @@ pub fn s_jump_check(level: Res<Level>, pathfinding: Res<Pathfinding>, mut gizmos
             Color::GREEN
         } else {
             Color::RED
-        },
+        }
+        .with_a(0.2),
+        10.0,
     );
 }
 
 pub fn draw_jump_arc(
-    start_pos: Vec2,
-    goal_pos: Vec2,
+    start_node: PathfindingGraphNode,
+    goal_node: PathfindingGraphNode,
     launch_velocity: Vec2,
     acceleration: Vec2,
     timestep: f32,
     gizmos: &mut Gizmos,
     color: Color,
+    radius: f32,
 ) {
+    let start_pos = start_node.position;
+    gizmos.circle_2d(start_pos, radius, color);
+
+    let goal_pos = goal_node.position;
+    gizmos.circle_2d(goal_pos, radius, color);
+
     let mut prev_pos = start_pos;
+    let mut prev_perpendicular_offset_1 = Vec2::ZERO;
+    let mut prev_perpendicular_offset_2 = Vec2::ZERO;
+    let mut prev_line_dir = Vec2::ZERO;
 
     for i in 1..10 {
         let t = timestep * i as f32;
         let pos = start_pos + launch_velocity * t + acceleration * t * t / 2.0;
         gizmos.line_2d(prev_pos, pos, color);
+
+        let line_dir = (pos - prev_pos).normalize();
+
+        if i <= 1 {
+            let start_perpendicular_normal = Vec2::new(-line_dir.y, line_dir.x).normalize();
+            let start_perpendicular_offset_1 = start_pos + start_perpendicular_normal * radius;
+            let start_perpendicular_offset_2 = start_pos - start_perpendicular_normal * radius;
+
+            prev_perpendicular_offset_1 = start_perpendicular_offset_1;
+            prev_perpendicular_offset_2 = start_perpendicular_offset_2;
+        } else {
+            let sum_dir = (line_dir + prev_line_dir).normalize();
+
+            let normal = Vec2::new(-sum_dir.y, sum_dir.x);
+
+            let perpendicular_offset_1 = prev_pos + normal * radius;
+            let perpendicular_offset_2 = prev_pos - normal * radius;
+
+            gizmos.line_2d(prev_pos, perpendicular_offset_1, color);
+            gizmos.line_2d(prev_pos, perpendicular_offset_2, color);
+
+            gizmos.line_2d(prev_perpendicular_offset_1, perpendicular_offset_1, color);
+            gizmos.line_2d(prev_perpendicular_offset_2, perpendicular_offset_2, color);
+
+            prev_perpendicular_offset_1 = perpendicular_offset_1;
+            prev_perpendicular_offset_2 = perpendicular_offset_2;
+        }
+
+        prev_line_dir = line_dir;
         prev_pos = pos;
     }
     gizmos.line_2d(prev_pos, goal_pos, color);
+
+    let line_dir = (goal_pos - prev_pos).normalize();
+    let sum_dir = (line_dir + prev_line_dir).normalize();
+
+    let normal = Vec2::new(-sum_dir.y, sum_dir.x);
+
+    let perpendicular_offset_1 = prev_pos + normal * radius;
+    let perpendicular_offset_2 = prev_pos - normal * radius;
+
+    gizmos.line_2d(prev_pos, prev_pos + normal * radius, color);
+    gizmos.line_2d(prev_pos, prev_pos - normal * radius, color);
+
+    gizmos.line_2d(prev_perpendicular_offset_1, perpendicular_offset_1, color);
+    gizmos.line_2d(prev_perpendicular_offset_2, perpendicular_offset_2, color);
+
+    let goal_normal = Vec2::new(-line_dir.y, line_dir.x).normalize();
+
+    let goal_perpendicular_offset_1 = goal_pos + goal_normal * radius;
+    let goal_perpendicular_offset_2 = goal_pos - goal_normal * radius;
+
+    gizmos.line_2d(goal_perpendicular_offset_1, perpendicular_offset_1, color);
+    gizmos.line_2d(goal_perpendicular_offset_2, perpendicular_offset_2, color);
 }
